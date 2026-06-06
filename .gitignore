@@ -10,9 +10,8 @@ __pycache__/
 dist/
 build/
 
-# Vector database (persistent storage - recreated from PDFs)
+# Vector database (persistent storage)
 database/
-chroma_db/
 
 # Source PDFs (not committed to repo - too large + copyright)
 data/*.pdf
