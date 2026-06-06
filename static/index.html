@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sound Design RAG</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <header>
+            <div class="header-content">
+                <span class="logo">🎛️</span>
+                <h1>Sound Design RAG</h1>
+                <span class="badge" id="status-badge">loading...</span>
+            </div>
+            <p class="subtitle">Ask anything about mixing, mastering, production &amp; vocals</p>
+        </header>
+
+        <main>
+            <div class="chat-container" id="chat-container">
+                <div class="welcome" id="welcome">
+                    <div class="welcome-icon">🎧</div>
+                    <h2>What would you like to know?</h2>
+                    <p>Ask about EQ, compression, reverb, vocal chains, mastering techniques, production tips &mdash; anything from the expert reference library.</p>
+                    <div class="suggestions" id="suggestions">
+                        <button class="suggestion-chip" data-q="How do I EQ a vocal to sit better in a mix?">🎤 EQ a vocal</button>
+                        <button class="suggestion-chip" data-q="What compression settings work best for drums?">🥁 Compress drums</button>
+                        <button class="suggestion-chip" data-q="How do I prepare a mix for mastering?">🎚️ Prep for mastering</button>
+                        <button class="suggestion-chip" data-q="What's the best way to use reverb on vocals?">🌊 Vocal reverb</button>
+                    </div>
+                </div>
+                <div class="messages" id="messages"></div>
+            </div>
+        </main>
+
+        <footer>
+            <form id="query-form" class="input-bar">
+                <input type="text" id="query-input" placeholder="Ask a sound design question..." autocomplete="off" autofocus>
+                <button type="submit" id="send-btn" aria-label="Send">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+                </button>
+            </form>
+            <div class="footer-info">
+                <span id="source-count"></span>
+                <span>Powered by RAG + LLM</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

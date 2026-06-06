@@ -7,13 +7,16 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from pathlib import Path
 
 import config
 from query_engine import ask, list_sources, count_documents
 
 app = FastAPI(
-    title="Sound Design RAG API",
+    title="Sound Design RAG",
     description="RAG-powered sound design assistant for mixing engineers, "
                 "producers, mastering engineers, and singers.",
     version="1.0.0",
@@ -27,6 +30,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve static frontend
+STATIC_DIR = Path(__file__).parent / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 # --- Request/Response Models ---
@@ -56,9 +64,12 @@ class StatusResponse(BaseModel):
 
 @app.get("/", tags=["Info"])
 async def root():
-    """API root with status."""
+    """Serve the chat UI."""
+    index = STATIC_DIR / "index.html"
+    if STATIC_DIR.exists() and index.exists():
+        return FileResponse(str(index))
     return {
-        "name": "Sound Design RAG API",
+        "name": "Sound Design RAG",
         "version": "1.0.0",
         "docs": "/docs",
     }
@@ -126,14 +137,17 @@ async def get_sources():
 if __name__ == "__main__":
     import uvicorn
 
-    print(f"Starting Sound Design RAG API on http://{config.HOST}:{config.PORT}")
-    print(f"Embedding mode: {config.EMBEDDING_MODE}")
-    print(f"LLM model: {config.LLM_MODEL}")
-    print(f"API docs: http://{config.HOST}:{config.PORT}/docs")
+    port = config.PORT
+    print(f"🎛️  Sound Design RAG")
+    print(f"   UI:      http://{config.HOST}:{port}")
+    print(f"   API:     http://{config.HOST}:{port}/ask")
+    print(f"   Docs:    http://{config.HOST}:{port}/docs")
+    print(f"   DB:      {count_documents()} documents")
+    print(f"   LLM:     {config.LLM_MODEL}")
+    print(f"   Embed:   {config.EMBEDDING_MODE}")
 
     uvicorn.run(
         "api:app",
         host=config.HOST,
-        port=config.PORT,
-        reload=True,
+        port=port,
     )
