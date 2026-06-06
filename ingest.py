@@ -197,8 +197,7 @@ def save_processed_file(client, file_hash: str, filename: str):
     meta_collection.add(
         ids=[file_hash],
         metadatas=[{"filename": filename, "processed_at": str(__import__('datetime').datetime.now())}],
-        documents=[""],
-        embeddings=[[0.0]],
+        documents=["processed"],
     )
 
 
