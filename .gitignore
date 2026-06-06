@@ -1,0 +1,30 @@
+# Environment
+.env
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Vector database (persistent storage - recreated from PDFs)
+database/
+chroma_db/
+
+# Source PDFs (not committed to repo - too large + copyright)
+data/*.pdf
+data/*.PDF
+data/raw/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
