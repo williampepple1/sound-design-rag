@@ -1,24 +1,23 @@
-/* ── Sound Design RAG — Chat UI ─────────────────── */
+/* ── Sound Design RAG — Chat UI Logic ───────────── */
 
-const chat = document.getElementById('chat-container');
 const messages = document.getElementById('messages');
 const welcome = document.getElementById('welcome');
 const form = document.getElementById('query-form');
 const input = document.getElementById('query-input');
 const sendBtn = document.getElementById('send-btn');
-const badge = document.getElementById('status-badge');
-const sourceCount = document.getElementById('source-count');
+const statusDot = document.getElementById('status-dot');
+const statusText = document.getElementById('status-text');
+const sourcesList = document.getElementById('sources-list');
+const clearBtn = document.getElementById('btn-clear');
 
 let isLoading = false;
 
 /* ── Init ──────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
+    input.focus();
     const status = await fetchStatus();
-    badge.textContent = status.ready ? 'ready' : 'empty';
-    badge.className = 'badge ' + (status.ready ? 'ready' : 'empty');
-    if (status.documents > 0) {
-        sourceCount.textContent = `${status.documents} chunks from ${status.sources.length} books`;
-    }
+    updateStatusUI(status);
+    if (status.sources?.length) renderSources(status.sources, status.documents);
 });
 
 /* ── Status ────────────────────────────────────────── */
@@ -27,10 +26,34 @@ async function fetchStatus() {
         const res = await fetch('/status');
         return await res.json();
     } catch {
-        badge.textContent = 'offline';
-        badge.className = 'badge empty';
+        statusDot.className = 'status-dot dot-warn';
+        statusText.textContent = 'offline';
         return { documents: 0, sources: [], ready: false };
     }
+}
+
+function updateStatusUI(s) {
+    if (s.ready) {
+        statusDot.className = 'status-dot dot-ok';
+        statusText.textContent = `${s.documents} chunks · ${s.sources.length} books`;
+    } else {
+        statusDot.className = 'status-dot dot-warn';
+        statusText.textContent = s.documents > 0 ? `${s.documents} docs` : 'empty';
+    }
+}
+
+function renderSources(sources, total) {
+    const iconMap = {
+        'audio mixing cookbook': '📘',
+        'mixing secrets': '📗',
+        'mastering guide': '📕',
+        'fviimusic tips': '📙',
+    };
+    sourcesList.innerHTML = sources.map(s => {
+        const key = Object.keys(iconMap).find(k => s.toLowerCase().includes(k));
+        const icon = iconMap[key] || '📄';
+        return `<div class="source-item"><span class="source-icon">${icon}</span><span class="source-name">${s}</span></div>`;
+    }).join('');
 }
 
 /* ── Submit ────────────────────────────────────────── */
@@ -39,9 +62,10 @@ form.addEventListener('submit', async (e) => {
     const q = input.value.trim();
     if (!q || isLoading) return;
     input.value = '';
-    addMessage(q, 'user');
+    addMsg(q, 'user');
     hideWelcome();
     setLoading(true);
+    sendBtn.disabled = true;
 
     const typingId = addTyping();
 
@@ -55,95 +79,121 @@ form.addEventListener('submit', async (e) => {
 
         if (!res.ok) {
             const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-            addMessage(err.detail || 'Something went wrong.', 'error');
+            addMsg(err.detail || 'Something went wrong.', 'error');
             return;
         }
 
         const data = await res.json();
-        addAssistantMessage(data.answer, data.sources);
+        addAssistantMsg(data.answer, data.sources);
     } catch (err) {
         removeTyping(typingId);
-        addMessage('Network error. Is the server running?', 'error');
+        addMsg('Network error — is the server running?', 'error');
     } finally {
         setLoading(false);
+        sendBtn.disabled = false;
+        input.focus();
     }
 });
 
 /* ── Suggestions ───────────────────────────────────── */
 document.getElementById('suggestions').addEventListener('click', (e) => {
-    const chip = e.target.closest('.suggestion-chip');
+    const chip = e.target.closest('.chip');
     if (chip) {
         input.value = chip.dataset.q;
         form.requestSubmit();
     }
 });
 
+/* ── Clear ─────────────────────────────────────────── */
+clearBtn.addEventListener('click', () => {
+    // Remove all messages except welcome
+    const msgs = messages.querySelectorAll('.msg');
+    msgs.forEach(m => m.remove());
+    welcome.style.display = 'flex';
+    input.focus();
+});
+
 /* ── Messages ──────────────────────────────────────── */
-function addMessage(text, role) {
+function addMsg(text, role) {
     const div = document.createElement('div');
-    div.className = `message ${role}`;
+    div.className = `msg ${role}`;
 
     const avatar = document.createElement('div');
-    avatar.className = 'avatar';
-    avatar.textContent = role === 'user' ? '👤' : '🤖';
+    avatar.className = 'msg-avatar';
+    avatar.textContent = role === 'user' ? '👤' : role === 'error' ? '⚠️' : '🤖';
+
+    const body = document.createElement('div');
+    body.className = 'msg-body';
 
     const bubble = document.createElement('div');
-    bubble.className = 'bubble';
+    bubble.className = 'msg-bubble';
     bubble.textContent = text;
 
-    div.append(avatar, bubble);
+    body.appendChild(bubble);
+    div.append(avatar, body);
     messages.appendChild(div);
     scrollDown();
-    return div;
 }
 
-function addAssistantMessage(text, sources) {
+function addAssistantMsg(text, sources) {
     const div = document.createElement('div');
-    div.className = 'message assistant';
+    div.className = 'msg assistant';
 
     const avatar = document.createElement('div');
-    avatar.className = 'avatar';
+    avatar.className = 'msg-avatar';
     avatar.textContent = '🤖';
 
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
+    const body = document.createElement('div');
+    body.className = 'msg-body';
 
-    // Render markdown-like formatting
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
     bubble.innerHTML = renderMarkdown(text);
 
     if (sources && sources.length) {
-        const src = document.createElement('div');
-        src.className = 'sources';
-        src.textContent = sources.map(s => `${s.source_file} (p.${s.page_num})`).join(' · ');
-        bubble.appendChild(src);
+        const sdiv = document.createElement('div');
+        sdiv.className = 'msg-sources';
+        sources.forEach(s => {
+            const span = document.createElement('span');
+            span.className = 'msg-source';
+            span.textContent = `${s.source_file} (p.${s.page_num})`;
+            sdiv.appendChild(span);
+        });
+        bubble.appendChild(sdiv);
     }
 
-    div.append(avatar, bubble);
+    body.appendChild(bubble);
+    div.append(avatar, body);
     messages.appendChild(div);
     scrollDown();
 }
 
 function addTyping() {
     const div = document.createElement('div');
-    div.className = 'message assistant typing';
-    div.id = 'typing-' + Date.now();
+    div.className = 'msg assistant typing';
+    const id = 'typing-' + Date.now();
+    div.id = id;
 
     const avatar = document.createElement('div');
-    avatar.className = 'avatar';
+    avatar.className = 'msg-avatar';
     avatar.textContent = '🤖';
 
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+
     const bubble = document.createElement('div');
-    bubble.className = 'bubble';
+    bubble.className = 'msg-bubble';
     for (let i = 0; i < 3; i++) {
         const dot = document.createElement('span');
-        dot.className = 'dot';
+        dot.className = 'typing-dot';
         bubble.appendChild(dot);
     }
 
-    div.append(avatar, bubble);
+    body.appendChild(bubble);
+    div.append(avatar, body);
     messages.appendChild(div);
     scrollDown();
-    return div.id;
+    return id;
 }
 
 function removeTyping(id) {
@@ -153,31 +203,33 @@ function removeTyping(id) {
 
 /* ── Helpers ───────────────────────────────────────── */
 function hideWelcome() { welcome.style.display = 'none'; }
-function setLoading(v) { isLoading = v; sendBtn.disabled = v; input.disabled = v; }
-function scrollDown() { chat.scrollTop = chat.scrollHeight; }
+function setLoading(v) { isLoading = v; }
+function scrollDown() { messages.scrollTop = messages.scrollHeight; }
 
-/* ── Simple Markdown Renderer ───────────────────────── */
+/* ── Markdown Renderer ─────────────────────────────── */
 function renderMarkdown(text) {
+    let t = text;
     // Code blocks
-    text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+    t = t.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
     // Inline code
-    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+    t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
     // Bold
-    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     // Italic
-    text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    t = t.replace(/\*([^*]+)\*/g, '<em>$1</em>');
     // Bullet lists
-    text = text.replace(/^[\s]*[-*]\s+(.+)$/gm, '<li>$1</li>');
-    text = text.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+    t = t.replace(/^[\s]*[-*]\s+(.+)$/gm, '<li>$1</li>');
+    t = t.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
     // Numbered lists
-    text = text.replace(/^[\s]*\d+\.\s+(.+)$/gm, '<li>$1</li>');
-    // Paragraphs (double newlines)
-    text = text.replace(/\n\n/g, '</p><p>');
-    // Single newlines
-    text = text.replace(/\n/g, '<br>');
-    // Wrap in paragraphs if not already wrapped
-    if (!text.startsWith('<')) {
-        text = '<p>' + text + '</p>';
-    }
-    return text;
+    t = t.replace(/^[\s]*\d+\.\s+(.+)$/gm, '<li>$1</li>');
+    // Paragraphs
+    t = t.replace(/\n\n/g, '</p><p>');
+    t = t.replace(/\n/g, '<br>');
+    if (!t.startsWith('<')) t = '<p>' + t + '</p>';
+    return t;
 }
+
+/* ── Input validation ──────────────────────────────── */
+input.addEventListener('input', () => {
+    sendBtn.disabled = !input.value.trim();
+});

@@ -1,3 +1,12 @@
+---
+title: Sound Design RAG
+emoji: 🎛️
+colorFrom: purple
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
 # 🎛️ Sound Design RAG
 
 A **retrieval-augmented generation (RAG)** system for audio engineers — mixing engineers, producers, mastering engineers, and singers. Ask technical questions about sound design and get answers grounded in expert reference books.

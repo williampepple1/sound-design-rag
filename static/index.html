@@ -5,47 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sound Design RAG</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="app">
-        <header>
-            <div class="header-content">
-                <span class="logo">🎛️</span>
-                <h1>Sound Design RAG</h1>
-                <span class="badge" id="status-badge">loading...</span>
-            </div>
-            <p class="subtitle">Ask anything about mixing, mastering, production &amp; vocals</p>
-        </header>
-
-        <main>
-            <div class="chat-container" id="chat-container">
-                <div class="welcome" id="welcome">
-                    <div class="welcome-icon">🎧</div>
-                    <h2>What would you like to know?</h2>
-                    <p>Ask about EQ, compression, reverb, vocal chains, mastering techniques, production tips &mdash; anything from the expert reference library.</p>
-                    <div class="suggestions" id="suggestions">
-                        <button class="suggestion-chip" data-q="How do I EQ a vocal to sit better in a mix?">🎤 EQ a vocal</button>
-                        <button class="suggestion-chip" data-q="What compression settings work best for drums?">🥁 Compress drums</button>
-                        <button class="suggestion-chip" data-q="How do I prepare a mix for mastering?">🎚️ Prep for mastering</button>
-                        <button class="suggestion-chip" data-q="What's the best way to use reverb on vocals?">🌊 Vocal reverb</button>
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <svg class="brand-icon" viewBox="0 0 40 40" fill="none">
+                        <rect x="2" y="2" width="36" height="36" rx="8" fill="url(#grad)" stroke="currentColor" stroke-width="1.5" stroke-opacity="0.15"/>
+                        <path d="M12 28V16l8-4v16l-8-4zM20 24V12l8-4v16l-8-4zM28 20V8l8-4v16l-8-4z" fill="currentColor" opacity="0.7"/>
+                        <path d="M12 28V16l8-4v16l-8-4z" fill="currentColor" opacity="0.4"/>
+                        <defs>
+                            <linearGradient id="grad" x1="0" y1="0" x2="40" y2="40">
+                                <stop stop-color="#a855f7"/>
+                                <stop offset="1" stop-color="#6366f1"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="brand-text">
+                        <h1>Sound Design</h1>
+                        <span class="brand-sub">RAG Engine</span>
                     </div>
                 </div>
-                <div class="messages" id="messages"></div>
+            </div>
+
+            <div class="sidebar-status">
+                <div class="status-item" id="status-db">
+                    <div class="status-dot" id="status-dot"></div>
+                    <div class="status-info">
+                        <span class="status-label">Vector DB</span>
+                        <span class="status-value" id="status-text">initializing...</span>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot dot-ok"></div>
+                    <div class="status-info">
+                        <span class="status-label">Embedding</span>
+                        <span class="status-value">all-MiniLM-L6-v2</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-sources" id="sidebar-sources">
+                <div class="sources-header">Knowledge Base</div>
+                <div class="sources-list" id="sources-list"></div>
+            </div>
+
+            <div class="sidebar-footer">
+                <a href="/docs" target="_blank" class="sidebar-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    API Docs
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <main class="main">
+            <div class="chat-header">
+                <div class="chat-header-left">
+                    <h2>Ask anything about sound</h2>
+                    <p class="chat-subtitle">Mixing · Mastering · Production · Vocals</p>
+                </div>
+                <button class="btn-clear" id="btn-clear" title="Clear conversation">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+            </div>
+
+            <div class="messages" id="messages">
+                <div class="welcome" id="welcome">
+                    <div class="welcome-visual">
+                        <svg class="wav-svg" viewBox="0 0 400 120" preserveAspectRatio="none">
+                            <path class="wav-path" d="M0,60 Q20,20 40,60 T80,60 T120,60 T160,60 T200,60 T240,60 T280,60 T320,60 T360,60 T400,60" fill="none" stroke="url(#wavGrad)" stroke-width="2" opacity="0.3"/>
+                            <path class="wav-path-2" d="M0,60 Q25,40 50,60 T100,60 T150,60 T200,60 T250,60 T300,60 T350,60 T400,60" fill="none" stroke="url(#wavGrad)" stroke-width="1.5" opacity="0.15"/>
+                            <defs>
+                                <linearGradient id="wavGrad" x1="0" y1="0" x2="400" y2="0">
+                                    <stop offset="0%" stop-color="#a855f7" stop-opacity="0"/>
+                                    <stop offset="25%" stop-color="#a855f7"/>
+                                    <stop offset="75%" stop-color="#6366f1"/>
+                                    <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div class="wav-overlay">
+                            <span class="wav-badge">1,657 CHUNKS</span>
+                            <span class="wav-badge">6 BOOKS</span>
+                        </div>
+                    </div>
+                    <div class="welcome-text">
+                        <h3>What do you want to know?</h3>
+                        <p>EQ curves, compression ratios, reverb tails, vocal chains, mastering chains, production workflows — ask and get answers grounded in expert reference books.</p>
+                    </div>
+                    <div class="suggestions" id="suggestions">
+                        <button class="chip" data-q="How do I EQ a vocal to sit better in a mix?">
+                            <span class="chip-icon">🎤</span>
+                            <span class="chip-label">EQ a vocal</span>
+                        </button>
+                        <button class="chip" data-q="What compression settings work best for drums?">
+                            <span class="chip-icon">🥁</span>
+                            <span class="chip-label">Compress drums</span>
+                        </button>
+                        <button class="chip" data-q="How do I prepare a mix for mastering?">
+                            <span class="chip-icon">🎚️</span>
+                            <span class="chip-label">Prep for mastering</span>
+                        </button>
+                        <button class="chip" data-q="What's the best way to use reverb on vocals?">
+                            <span class="chip-icon">🌊</span>
+                            <span class="chip-label">Vocal reverb</span>
+                        </button>
+                        <button class="chip" data-q="How do I sidechain compress a kick and bass?">
+                            <span class="chip-icon">🔗</span>
+                            <span class="chip-label">Sidechain</span>
+                        </button>
+                        <button class="chip" data-q="What are the best EQ frequencies for a bass guitar?">
+                            <span class="chip-icon">🎸</span>
+                            <span class="chip-label">Bass EQ</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <form id="query-form" class="input-bar" autocomplete="off">
+                    <input type="text" id="query-input" placeholder="Ask about EQ, compression, reverb, mastering..." autofocus>
+                    <button type="submit" id="send-btn" disabled aria-label="Send">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </button>
+                </form>
+                <p class="input-hint">Answers are grounded in expert reference material. Sources are cited automatically.</p>
             </div>
         </main>
-
-        <footer>
-            <form id="query-form" class="input-bar">
-                <input type="text" id="query-input" placeholder="Ask a sound design question..." autocomplete="off" autofocus>
-                <button type="submit" id="send-btn" aria-label="Send">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
-                </button>
-            </form>
-            <div class="footer-info">
-                <span id="source-count"></span>
-                <span>Powered by RAG + LLM</span>
-            </div>
-        </footer>
     </div>
 
     <script src="/static/app.js"></script>
