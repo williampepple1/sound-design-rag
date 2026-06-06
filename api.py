@@ -75,6 +75,17 @@ async def root():
     }
 
 
+@app.get("/health", tags=["Info"])
+async def health():
+    """Lightweight health check for HF Spaces and monitoring.
+    Always returns 200 — pings should never fail."""
+    return {
+        "status": "ok",
+        "service": "Sound Design RAG",
+        "version": "1.0.0",
+    }
+
+
 @app.get("/status", response_model=StatusResponse, tags=["Info"])
 async def get_status():
     """Get the RAG system status: document count, available sources, etc."""
