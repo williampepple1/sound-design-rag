@@ -19,6 +19,7 @@ import config
 def extract_text_from_pdf(pdf_path: Path) -> List[dict]:
     """
     Extract text from a PDF file page by page.
+    Uses OCR fallback for image-based/scanned PDFs.
     Returns list of dicts: {page_num, text, source_file}.
     """
     pages = []
@@ -28,6 +29,16 @@ def extract_text_from_pdf(pdf_path: Path) -> List[dict]:
     for page_num in range(len(doc)):
         page = doc[page_num]
         text = page.get_text()
+
+        # If no text extracted, try OCR (for scanned/image-based PDFs)
+        if len(text.strip()) < 20:
+            try:
+                tp = page.get_textpage_ocr(
+                    flags=0, language='eng', dpi=200, full=True
+                )
+                text = tp.extractText()
+            except Exception:
+                pass  # OCR failed, keep what we have
 
         # Skip nearly-empty pages
         if len(text.strip()) < 20:
@@ -72,7 +83,7 @@ def chunk_text(pages: List[dict],
             # If adding this paragraph exceeds chunk size, save current chunk
             if len(current_chunk) + len(para) + 1 > chunk_size and current_chunk:
                 chunk_id = hashlib.md5(
-                    f"{source}|p{page_num}|{current_chunk[:50]}".encode()
+                    f"{source}|p{page_num}|{len(chunks)}|{current_chunk[:50]}".encode()
                 ).hexdigest()[:12]
 
                 chunks.append({
@@ -97,7 +108,7 @@ def chunk_text(pages: List[dict],
         # Don't forget the last chunk
         if current_chunk.strip():
             chunk_id = hashlib.md5(
-                f"{source}|p{page_num}|{current_chunk[:50]}".encode()
+                f"{source}|p{page_num}|{len(chunks)}|{current_chunk[:50]}".encode()
             ).hexdigest()[:12]
             chunks.append({
                 "id": chunk_id,
